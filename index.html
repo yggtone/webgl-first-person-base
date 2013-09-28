@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title> </title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				height: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+			#info a { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+		</style>
+	</head>
+	<body tabindex="1">
+
+        <!-- Simple audio playback 
+        <audio src="audio/test.ogg" autoplay>
+          Your browser does not support the <code>audio</code> element.
+        </audio>-->
+
+
+		
+		<script src="build/three.min.js"></script>
+		<script src="js/controls/CapturedMouseMovement.js"></script>   
+		<script src="js/shaders/UnpackDepthRGBAShader.js"></script>
+		<script src="js/Detector.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script src="fonts/helvetiker_bold.typeface.js"></script>
+
+		<script>
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			var SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 1024;
+			var MARGIN = 100;
+			var SCREEN_WIDTH = window.innerWidth;
+			var SCREEN_HEIGHT = window.innerHeight;// - 2 * MARGIN;
+			var FLOOR = -250;
+			var camera, controls, scene, renderer;
+			var container, stats;
+			var NEAR = 5, FAR = 500;
+			var sceneHUD, cameraOrtho, hudMaterial;
+			var morph, morphs = [];
+			var light;
+			var clock = new THREE.Clock();
+			var raycaster;
+			var projector;
+			var INTERSECTED;
+			var levelMesh;
+			var obstacleList = [];
+    var planeGroup;
+    var ltx, lty, ltz;
+    var planeSize;
+    var movingForward = false;
+    var walkWave, walkSpeed, walkSpeedTarget;
+
+                  
+      //init mouse view to scene
+      var mousePosX = 1500.0;
+      var mousePosY = 128.0;
+      var mousePosXTarget = 1500.0;
+      var mousePosYTarget = 128.0;
+      // Note: at the time of writing, only Mozilla and WebKit support Pointer Lock. 
+      // The element we'll make fullscreen and pointer locked.
+      var elem;//set during init             
+      document.addEventListener("mousemove", function(e) {
+        var movementX = e.movementX       ||
+                        e.mozMovementX    ||
+                        e.webkitMovementX ||
+                        0,
+            movementY = e.movementY       ||
+                        e.mozMovementY    ||
+                        e.webkitMovementY ||
+                        0;
+       
+        // Print the mouse movement delta values
+        //console.log("movementX=" + movementX, "movementY=" + movementY);
+          mousePosXTarget += movementX ;
+          mousePosYTarget += movementY ;
+          //mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -30.0, 110.0 );
+          mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -20.0, 150.0 );
+      }, false);
+
+
+
+  
+
+
+
+			document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+            function onDocumentMouseUp( event ) {            
+           
+                movingForward = false;
+                
+                
+			}
+
+        document.addEventListener("keydown", function(e) {
+          if (e.keyCode == 76) {//13-return L-78
+            //toggleFullScreen();
+            //movingForward = true;
+          }
+          if (e.keyCode == 87) {//13-return L-78
+            //toggleFullScreen();
+            movingForward = true;
+          }
+        }, false);
+        //
+        document.addEventListener("keyup", function(e) {
+          
+          if (e.keyCode == 87) {//13-return L-78
+            //toggleFullScreen();
+            movingForward = false;
+          }
+        }, false);
+
+
+        
+
+
+			init();
+			animate();
+
+
+			function init() {
+			
+			    ltx = 0.0;  
+                lty = 0.0;  
+                ltz = 0.0; 
+                walkWave = 0.0; 
+                walkSpeed = 0.0;
+
+                raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0,0,-1), 0, 1000);
+                //raycaster = new THREE.Raycaster();
+                
+                projector = new THREE.Projector();    
+                
+          
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+                //container for fullscreen mouse lock
+                elem = document.documentElement;
+
+
+				// SCENE CAMERA
+				camera = new THREE.PerspectiveCamera( 23, SCREEN_WIDTH / SCREEN_HEIGHT, NEAR, FAR );
+				camera.position.set( 0, 0, 0 );
+				controls = new THREE.FirstPersonControls( camera );
+				controls.lookSpeed = 0.0125;
+				controls.movementSpeed = 500;
+				controls.noFly = false;
+				controls.lookVertical = true;
+				controls.constrainVertical = true;
+				controls.verticalMin = -3.1;
+				controls.verticalMax = 3.9;
+				controls.lon = -110;
+
+				// SCENE
+				scene = new THREE.Scene();
+				//scene.fog = new THREE.Fog( 0x00002b, 1000, FAR );
+                scene.fog = new THREE.Fog( 0xffffff, 40, 100 );
+				// LIGHTS
+				var ambient = new THREE.AmbientLight( 0x111114 );
+				scene.add( ambient );
+
+                //THREE.SpotLight = function ( hex, intensity, distance, angle, exponent ) {
+				light = new THREE.SpotLight( 0xffffff, 2.0, 500.0, Math.PI/4.0, 1 );
+				//light.distance = 10000;
+				//light.angle = 0.4;
+				light.position.set( 900, 500, 0 );
+				light.target.position.set( 0, 0, 0 );
+				
+
+				scene.add( light );
+
+				createHUD();
+				createScene();
+
+				// RENDERER
+				renderer = new THREE.WebGLRenderer( { clearColor: 0x000000, clearAlpha: 1, antialias: false } );
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				renderer.domElement.style.position = "relative";
+				renderer.domElement.style.top = 0;//MARGIN + 'px';
+				container.appendChild( renderer.domElement );
+
+				renderer.setClearColor( scene.fog.color, 1 );
+				renderer.autoClear = false;
+
+				//
+
+				renderer.shadowMapEnabled = false;
+				//renderer.shadowMapType = THREE.PCFShadowMap;
+
+				// STATS
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				stats.domElement.style.zIndex = 100;
+				//container.appendChild( stats.domElement );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+
+          
+
+
+			function onWindowResize() {
+
+				SCREEN_WIDTH = window.innerWidth;
+				SCREEN_HEIGHT = window.innerHeight;// - 2 * MARGIN;
+
+				camera.aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+
+				controls.handleResize();
+
+			}
+
+			function createHUD() {
+
+				cameraOrtho = new THREE.OrthographicCamera( SCREEN_WIDTH / - 2, SCREEN_WIDTH / 2,  SCREEN_HEIGHT / 2, SCREEN_HEIGHT / - 2, -10, 1000 );
+				cameraOrtho.position.z = 10;
+
+				var shader = THREE.UnpackDepthRGBAShader;
+				var uniforms = new THREE.UniformsUtils.clone( shader.uniforms );
+
+				hudMaterial = new THREE.ShaderMaterial( { vertexShader: shader.vertexShader, fragmentShader: shader.fragmentShader, uniforms: uniforms } );
+
+				var hudGeo = new THREE.PlaneGeometry( SHADOW_MAP_WIDTH / 2, SHADOW_MAP_HEIGHT / 2 );
+				var hudMesh = new THREE.Mesh( hudGeo, hudMaterial );
+				hudMesh.position.x = ( SCREEN_WIDTH - SHADOW_MAP_WIDTH / 2 ) * -0.5;
+				hudMesh.position.y = ( SCREEN_HEIGHT - SHADOW_MAP_HEIGHT / 2 ) * -0.5;
+				hudMesh.rotation.x = Math.PI / 2;
+
+				sceneHUD = new THREE.Scene();
+				//sceneHUD.add( hudMesh );
+
+				cameraOrtho.lookAt( sceneHUD.position );
+
+			}
+			
+			
+			
+
+			function createScene( ) {
+
+		
+
+                
+
+				// MORPHS
+				function addMorph( geometry, speed, duration, x, y, z, fudgeColor ) {
+
+					var material = new THREE.MeshLambertMaterial( { color: 0xffaa55, morphTargets: true, vertexColors: THREE.FaceColors } );
+
+					if ( fudgeColor ) {
+
+						material.color.offsetHSL( 0, Math.random() * 0.5 - 0.25, Math.random() * 0.5 - 0.25 );
+						material.ambient = material.color;
+
+					}
+
+					var meshAnim = new THREE.MorphAnimMesh( geometry, material );
+					meshAnim.speed = speed;
+					meshAnim.duration = duration;
+					meshAnim.time = 600 * Math.random();
+					meshAnim.position.set( x, y, z );
+					meshAnim.rotation.y = Math.PI/2;
+					meshAnim.castShadow = true;
+					meshAnim.receiveShadow = true;
+					scene.add( meshAnim );
+					morphs.push( meshAnim );
+
+				}
+
+				function morphColorsToFaceColors( geometry ) {
+					if ( geometry.morphColors && geometry.morphColors.length ) {
+						var colorMap = geometry.morphColors[ 0 ];
+						for ( var i = 0; i < colorMap.colors.length; i ++ ) {
+							geometry.faces[ i ].color = colorMap.colors[ i ];
+						}
+					}
+				}
+
+				var loader = new THREE.JSONLoader();
+
+				
+				
+				planeGroup = new THREE.Object3D();
+				scene.add(planeGroup);
+				
+				var planeScale = 100.0;
+				planeSize = 8.0 * planeScale;
+				var planeHeight = -30.0;
+				
+				loader.load( 'models/floor.js', function ( geometry, materials ) {
+                    var mapHeight = THREE.ImageUtils.loadTexture( "models/floormap.png" );
+		            mapHeight.anisotropy = 4;
+		            //mapHeight.repeat.set( 0.998, 0.998 );
+		            //mapHeight.offset.set( 0.001, 0.001 )
+		            mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
+		            //mapHeight.wrapS = mapHeight.wrapT = THREE.MirroredRepeatWrapping;
+		            mapHeight.format = THREE.RGBFormat;
+
+                    var floorTexture  = THREE.ImageUtils.loadTexture( "models/floor.png" );
+                    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+                    //floorTexture.wrapS = mapHeight.wrapT = THREE.ClampToEdgeWrapping;
+		            floorTexture.format = THREE.RGBFormat;
+
+                   
+                    //var material = new THREE.MeshBasicMaterial({ map: floorTexture });
+
+		            var material = new THREE.MeshPhongMaterial( { map:floorTexture ,
+		             ambient: 0xffff11, color: 0x552811, specular: 0x333333, shininess: 25,
+		              bumpMap: mapHeight, bumpScale: 1.0, metal: false, perPixel:true } );
+		            //var materials = new THREE.MeshPhongMaterial( materials );
+		            //var material = materials[ 0 ];
+		            //originalMaterial.bumpMap = mapHeight;
+		
+		            //planeX = i * planeSize * 1.2;
+		            //planeZ = j * planeSize;
+		            //console.log("j: " + j + "planeZ: " + planeZ );
+		            nmesh = addMesh( geometry, planeScale,
+		             0, planeHeight, 0,  0,0,0, material);
+		            //obstacleList.push(nmesh);
+		            planeGroup.add(nmesh);
+		        } );
+				
+			
+				
+				//var loaderB = new THREE.JSONLoader();
+				//var skinmesh = loaderB.load( "models/faceA.js", AnimatedMeshLoader );
+			    
+			    //, scale, x, y, z, rx, ry, rz
+
+
+                //var material = new THREE.MeshPhongMaterial( { ambient: 0x552811, color: 0x552811, specular: 0x333333, shininess: 25, bumpMap: mapHeight, bumpScale: 19, metal: false } );
+
+
+			}
+			
+			
+			function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+				    mesh = new THREE.Mesh( geometry, material );
+				    mesh.scale.set( scale, scale, scale );
+				    mesh.position.set( x, y, z );
+				    mesh.rotation.set( rx, ry, rz );
+				    //mesh.castShadow = true;
+				    //mesh.receiveShadow = true;
+				    scene.add( mesh );
+				    return mesh;
+			}
+			
+			
+			
+
+            function StaticMeshLoader(geometry, materials) {
+                    var material = new THREE.MeshFaceMaterial( materials );
+				    var originalMaterial = materials[ 0 ];
+				   
+				    var smesh = new THREE.Mesh( geometry, material );
+				    //smesh.scale.set( scale, scale, scale );
+				    //smesh.position.set( x, y, z );
+				    //smesh.rotation.set( rx, ry, rz );
+				    //smesh.castShadow = true;
+				    //smesh.receiveShadow = true;
+				    scene.add( smesh );
+				    
+			}
+
+            
+                
+            function AnimatedMeshLoader( geometry, materials ) {
+                //var material = new THREE.MeshFaceMaterial( materials );
+                
+                //texture version
+                var material = new THREE.MeshFaceMaterial( materials );
+				var originalMaterial = materials[ 0 ];
+				originalMaterial.skinning = true;
+				originalMaterial.transparent = true;
+				originalMaterial.alphaTest = 0.75;
+
+                THREE.AnimationHandler.add( geometry.animation );
+                //geometry.scale = 100.0;                
+                var animation, skinnedmesh;
+                skinnedmesh = new THREE.SkinnedMesh( geometry, material, false );
+
+                skinnedmesh.scale.set( 100.0, 100.0, 100.0 );
+
+				//skinnedmesh.position.x = 
+				//skinnedmesh.rotation.y = 0.2 - Math.random() * 0.4;
+				skinnedmesh.castShadow = true;
+				skinnedmesh.receiveShadow = true;
+				scene.add( skinnedmesh );
+				
+                //rename to "ArmatureAction" in blender overview if overwriting new ArmatureAction.001 etc.!!
+				animation = new THREE.Animation( skinnedmesh, "ArmatureAction" );
+                animation.play();
+                
+                return skinnedmesh;
+            }
+			
+			
+			function animate() {
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+			
+			function smooth(current, target, elapsed,  speed){	  
+                current += ((target - current) * elapsed ) / (elapsed + speed);			
+			    return current;
+		    }
+
+			function render() {
+
+				var delta = clock.getDelta();
+
+                
+
+                THREE.AnimationHandler.update( delta );
+                
+				for ( var i = 0; i < morphs.length; i ++ ) {
+					morph = morphs[ i ];
+					morph.updateAnimation( 1000 * delta );
+					morph.position.x += morph.speed * delta;
+					if ( morph.position.x  > 2000 )  {
+						morph.position.x = -1000 - Math.random() * 500;
+					}
+				}
+				
+				for ( var i = 0; i < obstacleList.length; i ++ ) {
+				    var obstacle = obstacleList[i];
+				    //obstacle.position.z += delta * 50.0;
+				
+				
+				}
+				
+				
+				
+				
+                //smoothed mouse movement
+                mousePosY = smooth(mousePosY,mousePosYTarget,delta,0.06);
+                mousePosX = smooth(mousePosX,mousePosXTarget,delta,0.06);               
+                controls.lookY = -mousePosY ;         
+                controls.lookX = mousePosX ;
+                //more direct mouse
+                //controls.lookY = -mousePosYTarget ;         
+                //controls.lookX = mousePosXTarget ;	
+                //controls.currentRotation += delta;		
+				controls.update( delta );
+				
+				
+				if( movingForward == true )
+				{
+				    walkSpeed = smooth(walkSpeed,30.0,delta,0.86);
+				}
+				else
+				{
+				    walkSpeed = smooth(walkSpeed,0.0,delta,0.26);
+				}
+				
+				if( walkSpeed > 0.1 )
+				{
+				
+				    walkWave += delta * walkSpeed * 0.2;
+                   
+				
+				    var vector = new THREE.Vector3(0,0,1);
+			        projector.unprojectVector( vector, camera );
+			        vector.normalize();
+				    vector.y = 0;
+				    vector.multiplyScalar(delta * walkSpeed);
+				    //camera.position.add(vector);
+				    //camera.position.x += 10.0;
+				    
+				    //planeGroup.position.z -= delta * 10.0;
+				    planeGroup.position.sub(vector);
+				    //planeGroup.translateZ(vector.z);
+				    //camera.translateZ(vector.z);
+				    if( planeGroup.position.z < -100.0 )
+				    {
+				        planeGroup.translateZ(100.0);
+                    }
+                    if( planeGroup.position.x < -100.0 )
+				    {
+				        planeGroup.translateX(100.0);
+                    }
+                    if( planeGroup.position.x > 100.0 )
+				    {
+				        planeGroup.translateX(-100.0);
+                    }
+                    if( planeGroup.position.z > 100.0 )
+				    {
+				        planeGroup.translateZ(-100.0);
+                    }
+				}
+				else
+				{
+				//walkSpeed
+				    walkWave += delta;
+                    
+				    
+				}
+				camera.position.y = 1.2 * Math.sin(walkWave);
+				controls.currentRotation = -0.05 * Math.sin(walkWave * 0.5);
+				
+				//console.log("mousePosX=" + mousePosX + " mousePosY=" + mousePosY);
+				//targx += mousemoveX * delta * 10.0;
+                //var atarg = new THREE.Vector3( targx, 0, 0 );
+                //camera.lookAt(atarg);
+                
+                
+                
+                
+                
+                
+                //RAYCAST
+                var vector = new THREE.Vector3(0,0,1);
+                //var vector = new THREE.Vector3( mousePosX, -mousePosY, 1 );
+				projector.unprojectVector( vector, camera );
+                //raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+                raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+				var intersects = raycaster.intersectObjects( scene.children );
+				//far set during ray constructor
+				//raycaster.precision = 0.00001;
+				//var intersects = raycaster.intersectObject(levelMesh);
+				if ( intersects.length > 1 ) {
+
+					if ( INTERSECTED != intersects[0].object ) {
+
+						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+						//INTERSECTED = intersects[0].object;
+						//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+						//INTERSECTED.material.emissive.setHex( 0xffffff );
+
+					}
+
+				} else {
+
+					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+					//INTERSECTED = null;
+
+				}
+				
+				
+				
+                
+                var offset =  new THREE.Vector3(150,150,-150);
+                //var lightPos = camera.clone().position.add( -vector);
+                var lightPos = camera.clone().position;
+                light.position.set( lightPos.x, lightPos.y, lightPos.z );
+				//light.target.position.set(camera.position + vector );
+				//light.target.position.set(0,0,1);
+				//var lightTarget = new THREE.Vector3(0,0,1);
+				//lightTarget = camera.clone().position.add( new THREE.Vector3(0,0,1) );
+				var lightTarget = camera.clone().position.add( vector );
+				//lightTarget = camera.clone().position.add( vector.sub( camera.position ) );
+                light.target.position.set( lightTarget.x, lightTarget.y, lightTarget.z );
+               
+                
+                //ltx = smooth(ltx,lightTarget.x,delta,0.06);  
+                //lty = smooth(lty,lightTarget.y,delta,0.06);  
+                //ltz = smooth(ltx,lightTarget.z,delta,0.06);  
+                //light.target.position.set( ltx,lty,ltz );
+                
+                
+                
+                
+				renderer.clear();
+				renderer.render( scene, camera );
+
+				// Render debug HUD with shadow map
+
+				//hudMaterial.uniforms.tDiffuse.texture = light.shadowMap;
+				//renderer.render( sceneHUD, cameraOrtho );
+
+			}
+
+		</script>
+
+    
+
+	</body>
+</html>

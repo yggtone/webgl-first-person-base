@@ -1,0 +1,15 @@
+This experiment attempts to coalesce various web technologies into a first person 3D application.  The goal is to get all aspects working in multiple cross-platform browsers without any plugins.  Firefox is an important focus because of its openness and availability.  Other web browsers are tested on including Chrome/Chromium.  
+
+
+Components:
+Graphics- three.js WebGL library will be used because of its fast progress and implemented features.
+
+Sound- The standardized Web Audio API used by Chrome will eventually be used, but Firefox has not fully implemented all features at the time of this commit.  Some deprecated html5 audio tags will be used as a placeholder to keep things working on more platforms.
+
+Mouse-grab/Fullscreen- There are some experimental APIs in Firefox and Webkit that handle fullscreen and mouse-lock features.  Although they are not standard, the compatability is acceptable on some platforms.
+
+Gamepad-TODO
+
+Components will be update or replaced as standards are changed or deprecated in major open-source browsers.
+
+ 
