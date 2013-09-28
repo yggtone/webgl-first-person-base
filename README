@@ -10,6 +10,10 @@ Mouse-grab/Fullscreen- There are some experimental APIs in Firefox and Webkit th
 
 Gamepad-TODO
 
-Components will be update or replaced as standards are changed or deprecated in major open-source browsers.
+Components will be updated or replaced as standards are changed or deprecated in major open-source browsers.
 
- 
+
+
+License:MIT
+
+three.js engine is free under MIT license. 
