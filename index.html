@@ -23,16 +23,9 @@
 			}
 			#info a { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
 		</style>
-	</head>
-	<body tabindex="1">
+    </head>
+    <body tabindex="1">
 
-        <!-- Simple audio playback 
-        <audio src="audio/test.ogg" autoplay>
-          Your browser does not support the <code>audio</code> element.
-        </audio>-->
-
-
-		
 		<script src="build/three.min.js"></script>
 		<script src="js/controls/CapturedMouseMovement.js"></script>   
 		<script src="js/shaders/UnpackDepthRGBAShader.js"></script>
@@ -41,24 +34,24 @@
 		<script src="fonts/helvetiker_bold.typeface.js"></script>
 
 		<script>
-			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
-			var SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 1024;
-			var MARGIN = 100;
-			var SCREEN_WIDTH = window.innerWidth;
-			var SCREEN_HEIGHT = window.innerHeight;// - 2 * MARGIN;
-			var FLOOR = -250;
-			var camera, controls, scene, renderer;
-			var container, stats;
-			var NEAR = 5, FAR = 500;
-			var sceneHUD, cameraOrtho, hudMaterial;
-			var morph, morphs = [];
-			var light;
-			var clock = new THREE.Clock();
-			var raycaster;
-			var projector;
-			var INTERSECTED;
-			var levelMesh;
-			var obstacleList = [];
+	  if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+	  var SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 1024;
+	  var MARGIN = 100;
+	  var SCREEN_WIDTH = window.innerWidth;
+	  var SCREEN_HEIGHT = window.innerHeight;// - 2 * MARGIN;
+	  var FLOOR = -250;
+	  var camera, controls, scene, renderer;
+	  var container, stats;
+	  var NEAR = 5, FAR = 500;
+	  var sceneHUD, cameraOrtho, hudMaterial;
+	  var morph, morphs = [];
+	  var light;
+	  var clock = new THREE.Clock();
+	  var raycaster;
+	  var projector;
+	  var INTERSECTED;
+	  var levelMesh;
+	  var obstacleList = [];
     var planeGroup;
     var ltx, lty, ltz;
     var planeSize;
@@ -66,31 +59,31 @@
     var walkWave, walkSpeed, walkSpeedTarget;
 
                   
-      //init mouse view to scene
-      var mousePosX = 1500.0;
-      var mousePosY = 128.0;
-      var mousePosXTarget = 1500.0;
-      var mousePosYTarget = 128.0;
-      // Note: at the time of writing, only Mozilla and WebKit support Pointer Lock. 
-      // The element we'll make fullscreen and pointer locked.
-      var elem;//set during init             
-      document.addEventListener("mousemove", function(e) {
-        var movementX = e.movementX       ||
-                        e.mozMovementX    ||
-                        e.webkitMovementX ||
-                        0,
-            movementY = e.movementY       ||
-                        e.mozMovementY    ||
-                        e.webkitMovementY ||
-                        0;
-       
-        // Print the mouse movement delta values
-        //console.log("movementX=" + movementX, "movementY=" + movementY);
-          mousePosXTarget += movementX ;
-          mousePosYTarget += movementY ;
-          //mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -30.0, 110.0 );
-          mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -20.0, 150.0 );
-      }, false);
+    //init mouse view to scene
+    var mousePosX = 1500.0;
+    var mousePosY = 128.0;
+    var mousePosXTarget = 1500.0;
+    var mousePosYTarget = 128.0;
+    // Note: at the time of writing, only Mozilla and WebKit support Pointer Lock. 
+    // The element we'll make fullscreen and pointer locked.
+    var elem;//set during init  
+           
+    document.addEventListener("mousemove", function(e) {
+      var movementX = e.movementX       ||
+                      e.mozMovementX    ||
+                      e.webkitMovementX ||
+                      0,
+          movementY = e.movementY       ||
+                      e.mozMovementY    ||
+                      e.webkitMovementY ||
+                      0;     
+      // Print the mouse movement delta values
+      //console.log("movementX=" + movementX, "movementY=" + movementY);
+        mousePosXTarget += movementX ;
+        mousePosYTarget += movementY ;
+        //mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -30.0, 110.0 );
+        mousePosYTarget = THREE.Math.clamp( mousePosYTarget, -20.0, 150.0 );
+    }, false);
 
 
 
@@ -98,61 +91,179 @@
 
 
 
-			document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-            function onDocumentMouseUp( event ) {            
-           
-                movingForward = false;
-                
-                
-			}
+    document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+          function onDocumentMouseUp( event ) {            
+         
+              movingForward = false;
+              
+              
+    }
 
-        document.addEventListener("keydown", function(e) {
-          if (e.keyCode == 76) {//13-return L-78
-            //toggleFullScreen();
-            //movingForward = true;
-          }
-          if (e.keyCode == 87) {//13-return L-78
-            //toggleFullScreen();
-            movingForward = true;
-          }
-        }, false);
-        //
-        document.addEventListener("keyup", function(e) {
-          
-          if (e.keyCode == 87) {//13-return L-78
-            //toggleFullScreen();
-            movingForward = false;
-          }
-        }, false);
+    document.addEventListener("keydown", function(e) {
+      if (e.keyCode == 76) {//13-return L-78
+        //toggleFullScreen();
+        //movingForward = true;
+      }
+      if (e.keyCode == 87) {//13-return L-78
+        //toggleFullScreen();
+        movingForward = true;
+      }
+    }, false);
+    
+    document.addEventListener("keyup", function(e) {
+      
+      if (e.keyCode == 87) {//13-return L-78
+        //toggleFullScreen();
+        movingForward = false;
+      }
+    }, false);
 
 
         
+    //lock mouse when changing into fullscreen 97
+    function fullscreenChange() {
+      if (document.webkitFullscreenElement === elem ||
+          document.mozFullscreenElement === elem ||
+          document.mozFullScreenElement === elem) { // Older API upper case 'S'.
+        // Element is fullscreen, now we can request pointer lock
+        elem.requestPointerLock = elem.requestPointerLock    ||
+                                  elem.mozRequestPointerLock ||
+                                  elem.webkitRequestPointerLock;
+        elem.requestPointerLock();
+      }
+    }
+       
+    document.addEventListener('fullscreenchange', fullscreenChange, false);
+    document.addEventListener('mozfullscreenchange', fullscreenChange, false);
+    document.addEventListener('webkitfullscreenchange', fullscreenChange, false);
+     
+    function pointerLockChange() {
+      if (document.mozPointerLockElement === elem ||
+          document.webkitPointerLockElement === elem) {
+        console.log("Pointer Lock was successful.");
+      } else {
+        console.log("Pointer Lock was lost.");
+      }
+    }
+     
+    document.addEventListener('pointerlockchange', pointerLockChange, false);
+    document.addEventListener('mozpointerlockchange', pointerLockChange, false);
+    document.addEventListener('webkitpointerlockchange', pointerLockChange, false);
+     
+    function pointerLockError() {
+      console.log("Error while locking pointer.");
+    }
+     
+    document.addEventListener('pointerlockerror', pointerLockError, false);
+    document.addEventListener('mozpointerlockerror', pointerLockError, false);
+    document.addEventListener('webkitpointerlockerror', pointerLockError, false);
+     
+    function lockPointer() {
+      elem = document.getElementById("pointer-lock-element");
+      // Start by going fullscreen with the element.  Current implementations
+      // require the element to be in fullscreen before requesting pointer
+      // lock--something that will likely change in the future.
+      elem.requestFullscreen = elem.requestFullscreen    ||
+                               elem.mozRequestFullscreen ||
+                               elem.mozRequestFullScreen || // Older API upper case 'S'.
+                               elem.webkitRequestFullscreen;
+      elem.requestFullscreen();
+    }
 
-
-			init();
-			animate();
-
-
-			function init() {
-			
-			    ltx = 0.0;  
-                lty = 0.0;  
-                ltz = 0.0; 
-                walkWave = 0.0; 
-                walkSpeed = 0.0;
-
-                raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0,0,-1), 0, 1000);
-                //raycaster = new THREE.Raycaster();
-                
-                projector = new THREE.Projector();    
-                
+      
+    function toggleFullScreen() {
+      if (!document.fullscreenElement &&    // alternative standard method
+          !document.mozFullScreenElement && !document.webkitFullscreenElement) {  // current working methods
           
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+          document.documentElement.mozRequestFullScreen();
+          document.documentElement.mozRequestPointerLock();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+          document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+        }
+                        
+      } else {//already in fullscreen, exit
+        if (document.cancelFullScreen) {
+          document.cancelFullScreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.webkitCancelFullScreen) {
+          document.webkitCancelFullScreen();
+        }             
+        
+      }
+    }
 
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
+    //capture mouse and go fullscreen on mouse click
+    document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+    function onDocumentMouseDown( event ) {            
+        //if not already in fullscreen, attempt fullscreen
+        if (!document.fullscreenElement &&    // alternative standard method
+          !document.mozFullScreenElement && !document.webkitFullscreenElement) {
+            toggleFullScreen();
+            
+        }	
+        
+        //need to focus to make sure keyboard events capture
+        //<body tabindex="1"> needed for focus?
+        document.documentElement.focus();          
+        movingForward = true;                         
+		}
 
-                //container for fullscreen mouse lock
-                elem = document.documentElement;
+
+    var Sound = function ( sources, radius, volume ) {
+	    var audio = document.createElement( 'audio' );
+	    for ( var i = 0; i < sources.length; i ++ ) {
+		    var source = document.createElement( 'source' );
+		    source.src = sources[ i ];
+		    audio.appendChild( source );
+	    }
+	    audio.loop = true;
+	    this.position = new THREE.Vector3();
+	    this.play = function () {
+		    audio.play();
+	    }
+	    this.update = function ( camera ) {
+		    var distance = this.position.distanceTo( camera.position );
+		    if ( distance <= radius ) {
+			    audio.volume = volume * ( 1 - distance / radius );
+		    } else {
+			    audio.volume = 0;
+		    }
+	    }
+    }
+    var soundA;
+
+
+    init();
+    animate();
+
+
+		function init() {
+			
+        ltx = 0.0;  
+        lty = 0.0;  
+        ltz = 0.0; 
+        walkWave = 0.0; 
+        walkSpeed = 0.0;
+
+        raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0,0,-1), 0, 1000);
+        //raycaster = new THREE.Raycaster();
+
+        projector = new THREE.Projector();    
+                        
+                  
+        soundA = new Sound( [ 'audio/test.ogg' ], 2275, 1 );
+        //soundA.position.copy( mesh1.position );
+        soundA.play();
+
+        container = document.createElement( 'div' );
+        document.body.appendChild( container );
+
+        //container for fullscreen mouse lock
+        elem = document.documentElement;
 
 
 				// SCENE CAMERA
@@ -217,12 +328,10 @@
 
 			}
 
-
           
 
 
 			function onWindowResize() {
-
 				SCREEN_WIDTH = window.innerWidth;
 				SCREEN_HEIGHT = window.innerHeight;// - 2 * MARGIN;
 
@@ -232,11 +341,9 @@
 				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
 
 				controls.handleResize();
-
 			}
 
 			function createHUD() {
-
 				cameraOrtho = new THREE.OrthographicCamera( SCREEN_WIDTH / - 2, SCREEN_WIDTH / 2,  SCREEN_HEIGHT / 2, SCREEN_HEIGHT / - 2, -10, 1000 );
 				cameraOrtho.position.z = 10;
 
@@ -255,25 +362,18 @@
 				//sceneHUD.add( hudMesh );
 
 				cameraOrtho.lookAt( sceneHUD.position );
-
 			}
 			
 			
 			
 
 			function createScene( ) {
-
-		
-
-                
-
 				// MORPHS
 				function addMorph( geometry, speed, duration, x, y, z, fudgeColor ) {
 
 					var material = new THREE.MeshLambertMaterial( { color: 0xffaa55, morphTargets: true, vertexColors: THREE.FaceColors } );
 
 					if ( fudgeColor ) {
-
 						material.color.offsetHSL( 0, Math.random() * 0.5 - 0.25, Math.random() * 0.5 - 0.25 );
 						material.ambient = material.color;
 
@@ -347,14 +447,7 @@
 				
 			
 				
-				//var loaderB = new THREE.JSONLoader();
-				//var skinmesh = loaderB.load( "models/faceA.js", AnimatedMeshLoader );
-			    
-			    //, scale, x, y, z, rx, ry, rz
-
-
-                //var material = new THREE.MeshPhongMaterial( { ambient: 0x552811, color: 0x552811, specular: 0x333333, shininess: 25, bumpMap: mapHeight, bumpScale: 19, metal: false } );
-
+	
 
 			}
 			
@@ -373,7 +466,7 @@
 			
 			
 
-            function StaticMeshLoader(geometry, materials) {
+      function StaticMeshLoader(geometry, materials) {
                     var material = new THREE.MeshFaceMaterial( materials );
 				    var originalMaterial = materials[ 0 ];
 				   
@@ -389,22 +482,22 @@
 
             
                 
-            function AnimatedMeshLoader( geometry, materials ) {
-                //var material = new THREE.MeshFaceMaterial( materials );
-                
-                //texture version
-                var material = new THREE.MeshFaceMaterial( materials );
+      function AnimatedMeshLoader( geometry, materials ) {
+        //var material = new THREE.MeshFaceMaterial( materials );
+        
+        //texture version
+        var material = new THREE.MeshFaceMaterial( materials );
 				var originalMaterial = materials[ 0 ];
 				originalMaterial.skinning = true;
 				originalMaterial.transparent = true;
 				originalMaterial.alphaTest = 0.75;
 
-                THREE.AnimationHandler.add( geometry.animation );
-                //geometry.scale = 100.0;                
-                var animation, skinnedmesh;
-                skinnedmesh = new THREE.SkinnedMesh( geometry, material, false );
+        THREE.AnimationHandler.add( geometry.animation );
+        //geometry.scale = 100.0;                
+        var animation, skinnedmesh;
+        skinnedmesh = new THREE.SkinnedMesh( geometry, material, false );
 
-                skinnedmesh.scale.set( 100.0, 100.0, 100.0 );
+        skinnedmesh.scale.set( 100.0, 100.0, 100.0 );
 
 				//skinnedmesh.position.x = 
 				//skinnedmesh.rotation.y = 0.2 - Math.random() * 0.4;
@@ -412,7 +505,7 @@
 				skinnedmesh.receiveShadow = true;
 				scene.add( skinnedmesh );
 				
-                //rename to "ArmatureAction" in blender overview if overwriting new ArmatureAction.001 etc.!!
+        //rename to "ArmatureAction" in blender overview if overwriting new ArmatureAction.001 etc.!!
 				animation = new THREE.Animation( skinnedmesh, "ArmatureAction" );
                 animation.play();
                 
@@ -458,17 +551,17 @@
 				}
 				
 				
+				soundA.update(camera);
 				
-				
-                //smoothed mouse movement
-                mousePosY = smooth(mousePosY,mousePosYTarget,delta,0.06);
-                mousePosX = smooth(mousePosX,mousePosXTarget,delta,0.06);               
-                controls.lookY = -mousePosY ;         
-                controls.lookX = mousePosX ;
-                //more direct mouse
-                //controls.lookY = -mousePosYTarget ;         
-                //controls.lookX = mousePosXTarget ;	
-                //controls.currentRotation += delta;		
+        //smoothed mouse movement
+        mousePosY = smooth(mousePosY,mousePosYTarget,delta,0.06);
+        mousePosX = smooth(mousePosX,mousePosXTarget,delta,0.06);               
+        controls.lookY = -mousePosY ;         
+        controls.lookX = mousePosX ;
+        //more direct mouse
+        //controls.lookY = -mousePosYTarget ;         
+        //controls.lookX = mousePosXTarget ;	
+        //controls.currentRotation += delta;		
 				controls.update( delta );
 				
 				
@@ -536,9 +629,9 @@
                 
                 
                 
-                //RAYCAST
-                var vector = new THREE.Vector3(0,0,1);
-                //var vector = new THREE.Vector3( mousePosX, -mousePosY, 1 );
+        //RAYCAST
+        var vector = new THREE.Vector3(0,0,1);
+        //var vector = new THREE.Vector3( mousePosX, -mousePosY, 1 );
 				projector.unprojectVector( vector, camera );
                 //raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
                 raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
@@ -560,47 +653,29 @@
 
 				} else {
 
-					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
+				  if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
 					//INTERSECTED = null;
 
 				}
-				
-				
-				
-                
-                var offset =  new THREE.Vector3(150,150,-150);
-                //var lightPos = camera.clone().position.add( -vector);
-                var lightPos = camera.clone().position;
-                light.position.set( lightPos.x, lightPos.y, lightPos.z );
-				//light.target.position.set(camera.position + vector );
-				//light.target.position.set(0,0,1);
-				//var lightTarget = new THREE.Vector3(0,0,1);
-				//lightTarget = camera.clone().position.add( new THREE.Vector3(0,0,1) );
-				var lightTarget = camera.clone().position.add( vector );
-				//lightTarget = camera.clone().position.add( vector.sub( camera.position ) );
-                light.target.position.set( lightTarget.x, lightTarget.y, lightTarget.z );
-               
-                
-                //ltx = smooth(ltx,lightTarget.x,delta,0.06);  
-                //lty = smooth(lty,lightTarget.y,delta,0.06);  
-                //ltz = smooth(ltx,lightTarget.z,delta,0.06);  
-                //light.target.position.set( ltx,lty,ltz );
-                
-                
-                
-                
-				renderer.clear();
-				renderer.render( scene, camera );
+				                
+          var offset =  new THREE.Vector3(150,150,-150);
+          //var lightPos = camera.clone().position.add( -vector);
+          var lightPos = camera.clone().position;
+          light.position.set( lightPos.x, lightPos.y, lightPos.z );
+		      //light.target.position.set(camera.position + vector );
+		      //light.target.position.set(0,0,1);
+		      //var lightTarget = new THREE.Vector3(0,0,1);
+		      //lightTarget = camera.clone().position.add( new THREE.Vector3(0,0,1) );
+		      var lightTarget = camera.clone().position.add( vector );
+		      //lightTarget = camera.clone().position.add( vector.sub( camera.position ) );
+          light.target.position.set( lightTarget.x, lightTarget.y, lightTarget.z );
+                                 
+			    renderer.clear();
+			    renderer.render( scene, camera );
 
-				// Render debug HUD with shadow map
+	    }
 
-				//hudMaterial.uniforms.tDiffuse.texture = light.shadowMap;
-				//renderer.render( sceneHUD, cameraOrtho );
-
-			}
-
-		</script>
+		  </script>
 
     
 
